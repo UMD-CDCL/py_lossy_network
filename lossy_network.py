@@ -190,7 +190,7 @@ def main() -> int:
                     assert(i+1 < len(split_user_input))
 
                     latency = split_user_input[i+1]
-                elif split_user_input[i] == 'delay_ms':
+                elif split_user_input[i] == 'delay':
                     # if 'delay_ms' variables are none; if they aren't this implies user assigned more than once
                     assert(avg_delay is None and std_dev_delay is None)
 
@@ -202,17 +202,6 @@ def main() -> int:
             # add the rules
             utils.add_tbf_filter(split_user_input[1], 'root', '1:0', bw, burst, latency)
             utils.add_netem_filter(split_user_input[1], 'parent 1:1', '10:0', loss, avg_delay, std_dev_delay)
-
-            # if len(split_user_input) != 2 or len(split_user_input) > 4:
-            #     continue
-            #
-            # ip_addr = split_user_input[1]
-            # proc = utils.ping(ip_addr, count=20, timeout_seconds=20)
-            # if proc.returncode != 0:
-            #     print(proc.stderr.decode('utf-8'))
-            # print(proc.stdout.decode('utf-8'))
-            # regex = re.compile(r'time=\d+')
-            # match = regex.findall(proc.stdout.decode('utf-8'))
         elif split_user_input[0] == 'sender':
             # the expected number of arguments is 2, so if it is not exactly 2, then prompt the user again
             if len(split_user_input) != 2:

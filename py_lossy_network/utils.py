@@ -157,7 +157,13 @@ def process_iperf3(iperf3_output: str):
 
     # number of out-of-order datagrams
     reordered_regex = re.compile('\d+ datagrams')
-    reordered_datagrams = int(reordered_regex.findall(iperf3_output)[0].split(' ')[0])
+    reordered_regex_match = reordered_regex.findall(iperf3_output)
+
+    # if nothing gets reordered, it's possible nothing gets printed, and we don't match anything, so check for that
+    if len(reordered_regex_match) > 0:
+        reordered_datagrams = int(reordered_regex.findall(iperf3_output)[0].split(' ')[0])
+    else:
+        reordered_datagrams = 0
 
     return client_ip, bitrate_kbps, float(lost_datagrams / total_datagrams), float(
         reordered_datagrams / total_datagrams)
