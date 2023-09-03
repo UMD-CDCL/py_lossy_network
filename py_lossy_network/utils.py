@@ -190,7 +190,6 @@ def process_ping(ping_output: str):
 
     # find packet loss
     packet_loss_regex = re.compile('[\d+.\d+]%')
-    print(packet_loss_regex.findall(ping_output)[0])
     percent_packet_loss = float(packet_loss_regex.findall(ping_output)[0][:-1]) / 100.  # divide by 100, since nominally in form: X%
 
     return delay_ms, percent_packet_loss
@@ -199,4 +198,4 @@ def process_ping(ping_output: str):
 def save(dset, data):
     dset.resize(dset.shape[0]+1, axis=0)
     dset[-1] = data
-    print("Dset:\n shape: {0}\n last element: {1}".format(dset.shape[0], dset[-1]))
+    # print("Dset:\n shape: {0}\n last element: {1}".format(dset.shape[0], dset[-1]))

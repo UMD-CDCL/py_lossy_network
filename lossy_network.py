@@ -211,7 +211,8 @@ def main() -> int:
             if proc.returncode != 0:
                 print(proc.stderr.decode('utf-8'))
                 continue
-            print(proc.stdout.decode('utf-8'))
+            # print(proc.stdout.decode('utf-8'))
+            print("completed.")
         elif split_user_input[0] == 'receiver':
             # start iperf3 as the server (takes roughly 25 seconds)
             proc = utils.iperf3_server()
