@@ -38,7 +38,11 @@ def show_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
     :param network_interface: the network interface we would like to display filter rules for represented as a str
     :return: the output of the call to `tc`
     """
-    return subprocess.run(['tc', 'qdisc', 'show', 'dev', network_interface], capture_output=True)
+    try:
+        ret = subprocess.run(['tc', 'qdisc', 'show', 'dev', network_interface], capture_output=True)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def del_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
@@ -48,7 +52,11 @@ def del_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
     :return:
     """
     bash_command = "sudo tc qdisc del dev {0} root".format(network_interface)
-    return subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    try:
+        ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def add_tbf_filter(network_interface: str, parent: str, handle: str, rate: str, burst: str,
@@ -63,9 +71,12 @@ def add_tbf_filter(network_interface: str, parent: str, handle: str, rate: str, 
     :param latency:
     :return:
     """
-    bash_command = "sudo tc qdisc add dev {0} {1} handle {2} tbf rate {3} burst {4} latency {5}".format(
-        network_interface, parent, handle, rate, burst, latency)
-    return subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    bash_command = "sudo tc qdisc add dev {0} {1} handle {2} tbf rate {3} burst {4} latency {5}".format(network_interface, parent, handle, rate, burst, latency)
+    try:
+        ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str, avg_delay: str,
@@ -80,9 +91,12 @@ def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str
     :param std_dev_delay:
     :return:
     """
-    bash_command = "sudo tc qdisc add dev {0} {1} handle {2} netem loss {3} delay {4} {5} distribution normal ".format(
-        network_interface, parent, handle, loss, avg_delay, std_dev_delay)
-    return subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    bash_command = "sudo tc qdisc add dev {0} {1} handle {2} netem loss {3} delay {4} {5} distribution normal ".format(network_interface, parent, handle, loss, avg_delay, std_dev_delay)
+    try:
+        ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def ping(ip_addr: str, count: int = 10, timeout_seconds: int = 20) -> subprocess.CompletedProcess:
@@ -93,7 +107,11 @@ def ping(ip_addr: str, count: int = 10, timeout_seconds: int = 20) -> subprocess
     :param timeout_seconds:
     :return:
     """
-    return subprocess.run(['ping', '-c', str(count), ip_addr], capture_output=True, timeout=timeout_seconds)
+    try:
+        ret = subprocess.run(['ping', '-c', str(count), ip_addr], capture_output=True, timeout=timeout_seconds)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def iperf3_server(timeout_seconds: int = 120) -> subprocess.CompletedProcess:
@@ -101,7 +119,11 @@ def iperf3_server(timeout_seconds: int = 120) -> subprocess.CompletedProcess:
 
     :return:
     """
-    return subprocess.run(['iperf3', '-s', '-1'], capture_output=True, timeout=timeout_seconds)
+    try:
+        ret = subprocess.run(['iperf3', '-s', '-1'], capture_output=True, timeout=timeout_seconds)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def iperf3_client(receiver_ip_addr: str, timeout_seconds: int = 120) -> subprocess.CompletedProcess:
@@ -110,7 +132,11 @@ def iperf3_client(receiver_ip_addr: str, timeout_seconds: int = 120) -> subproce
     :param receiver_ip_addr:
     :return:
     """
-    return subprocess.run(['iperf3', '-c', receiver_ip_addr, '-u'], capture_output=True, timeout=timeout_seconds)
+    try:
+        ret = subprocess.run(['iperf3', '-c', receiver_ip_addr, '-u'], capture_output=True, timeout=timeout_seconds)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 
 def list_available_interfaces() -> list:
@@ -118,9 +144,15 @@ def list_available_interfaces() -> list:
 
     :return:
     """
-    proc_ifconfig = subprocess.run(['ifconfig', '-a'], check=True, capture_output=True)
-    network_interface_list = subprocess.run(['sed', 's/[ \t].*//;/^$/d'], input=proc_ifconfig.stdout,
-                                            capture_output=True).stdout.decode('utf-8').split(':\n')
+    try:
+        proc_ifconfig = subprocess.run(['ifconfig', '-a'], check=True, capture_output=True)
+    except:
+        return subprocess.CompletedProcess(args="", returncode=1)
+
+    try:
+        network_interface_list = subprocess.run(['sed', 's/[ \t].*//;/^$/d'], input=proc_ifconfig.stdout,capture_output=True).stdout.decode('utf-8').split(':\n')
+    except:
+        return subprocess.CompletedProcess(args="", returncode=1)
     return [interface for interface in network_interface_list if interface != '']
 
 
@@ -198,4 +230,3 @@ def process_ping(ping_output: str):
 def save(dset, data):
     dset.resize(dset.shape[0]+1, axis=0)
     dset[-1] = data
-    # print("Dset:\n shape: {0}\n last element: {1}".format(dset.shape[0], dset[-1]))
