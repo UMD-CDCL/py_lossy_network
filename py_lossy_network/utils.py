@@ -133,7 +133,7 @@ def iperf3_client(receiver_ip_addr: str, timeout_seconds: int = 120) -> subproce
     :return:
     """
     try:
-        ret = subprocess.run(['iperf3', '-c', receiver_ip_addr, '-u'], capture_output=True, timeout=timeout_seconds)
+        ret = subprocess.run(['iperf3', '-c', receiver_ip_addr, '-u', '-b', '100M'], capture_output=True, timeout=timeout_seconds)  # send 100Mb/s
     except:
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret
