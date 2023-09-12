@@ -17,11 +17,16 @@ show <INTERFACE>:
 del <INTERFACE>: 
     Description: deletes all `tc` filter rules on network interface <INTERFACE>
     Example: del eth0
-set <INTERFACE> bw <BANDWIDTH> burst <BURST> latency <LATENCY> loss <LOSS> delay <MEAN_DELAY> <STD_DEV_DELAY>
-    Description: sets the outgoing (upload) bandwidth limit, burst limit, and latency limit 
-    Example: set docker0 bw 500kbit burst 32kbit latency 500ms loss 5% delay 250ms 10ms
-    Example: set docker0 bw 25mbit burst 64kbit latency 5s loss 0% delay 0ms 0ms
-    Example: set docker0 bw 500kbit burst 1mbit latency 250ms loss 0.5% delay 10ms 50ms
+set_egress <INTERFACE> bw <BANDWIDTH> burst <BURST> latency <LATENCY> loss <LOSS> delay <MEAN_DELAY> <STD_DEV_DELAY>
+    Description: sets the egress bandwidth limit, burst limit, and latency limit 
+    Example: set_egress docker0 bw 500kbit burst 32kbit latency 500ms loss 5% delay 250ms 10ms
+    Example: set_egress docker0 bw 25mbit burst 64kbit latency 5s loss 0% delay 0ms 0ms
+    Example: set_egress docker0 bw 500kbit burst 1mbit latency 250ms loss 0.5% delay 10ms 50ms
+set_ingress <INTERFACE> bw <BANDWIDTH> burst <BURST>
+    Description: sets the egress bandwidth limit and burst limit 
+    Example: set_ingress docker0 bw 500kbit burst 32kbit 
+    Example: set_ingress docker0 bw 25mbit burst 64kbit 
+    Example: set_ingress docker0 bw 500kbit burst 1mbit 
 "sender <SERVER_IP>": 
     Description: initiates data collection with the host system as the sender of data
     Example: sender 172.17.0.2
@@ -45,13 +50,13 @@ def show_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
     return ret
 
 
-def del_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
+def del_tc_rules(network_interface: str, qdisc: str) -> subprocess.CompletedProcess:
     """
 
     :param network_interface:
     :return:
     """
-    bash_command = "sudo tc qdisc del dev {0} root".format(network_interface)
+    bash_command = "sudo tc qdisc del dev {0} {1}".format(network_interface, qdisc)
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
@@ -98,6 +103,15 @@ def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret
 
+
+def add_egress_rule(network_interface: str, bw: str, burst: str) -> subprocess.CompletedProcess:
+    bash_command = "sudo tc qdisc add dev {0} handle ffff: ingress && " \
+                   "sudo tc filter add dev {0} parent ffff: u32 match u32 0 0 police rate {1} burst {2}".format(network_interface, bw, burst)
+    try:
+        ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
+    except:
+        ret = subprocess.CompletedProcess(args="", returncode=1)
+    return ret
 
 def ping(ip_addr: str, count: int = 10, timeout_seconds: int = 20) -> subprocess.CompletedProcess:
     """
@@ -178,7 +192,9 @@ def process_iperf3(iperf3_output: str):
     # transform the vector of strings into numpy vector with assumed units of kilobits per second
     bitrate_kbps = np.zeros((len(bitrates),))
     for i in range(0, len(bitrates)):
-        bitrates[i] = ureg(bitrates[i].lower()).to(ureg.kbit / ureg.s)  # perform unit conversion
+        if bitrates[i][-9] == 'K':
+            bitrates[i] = bitrates[i].lower()
+        bitrates[i] = ureg(bitrates[i]).to(ureg.kbit / ureg.s)  # perform unit conversion
         bitrate_kbps[i] = bitrates[i].m  # get the value of the "Quantity" object (not the unit)
 
     # get number of lost datagrams and  total number of datagrams
