@@ -147,14 +147,17 @@ async def iperf3_server() -> subprocess.CompletedProcess:
     return ret
 
 
-def iperf3_client(receiver_ip_addr: str, timeout_seconds: int = 120) -> subprocess.CompletedProcess:
+async def iperf3_client(receiver_ip_addr: str) -> subprocess.CompletedProcess:
     """
 
     :param receiver_ip_addr:
     :return:
     """
     try:
-        ret = subprocess.run(['iperf3', '-c', receiver_ip_addr, '-u', '-b', '100M'], capture_output=True, timeout=timeout_seconds)  # send 100Mb/s
+        bash_command = 'iperf3 -c {0} -u -b 100M'.format(receiver_ip_addr)
+        proc = await asyncio.create_subprocess_shell(bash_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await proc.communicate()
+        ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret

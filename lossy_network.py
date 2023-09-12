@@ -320,7 +320,7 @@ async def input_loop():
             if len(split_user_input) != 2:
                 print("\"sender\" command expects 1 argument, the ip of the receiver. You provided {0} arguments".format(len(split_user_input) - 1))
                 continue
-            proc = utils.iperf3_client(split_user_input[1])
+            proc = await utils.iperf3_client(split_user_input[1])
             if proc.returncode != 0:
                 print(proc.stderr.decode('utf-8'))
                 continue
