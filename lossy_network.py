@@ -321,6 +321,8 @@ async def input_loop():
                 print("\"sender\" command expects 1 argument, the ip of the receiver. You provided {0} arguments".format(len(split_user_input) - 1))
                 continue
             proc = await utils.iperf3_client(split_user_input[1])
+
+            # TODO: fix this conditional to catch no iperf3 -s response... check something like the stderr
             if proc.returncode != 0:
                 print(proc.stderr.decode('utf-8'))
                 continue
@@ -357,7 +359,7 @@ async def input_loop():
             utils.save(delay_dset, delay_ms)  # save the round-trip delay in milliseconds
             utils.save(percent_lost_tcp_dset, percent_lost_tcp)  # save the percent TCP packets lost
 
-            print(bitrate_kbps)
+            # print(bitrate_kbps)
             # tables
             table = [
                 ['client ip', 'avg. bitrate [kbit/s]', 'std. dev. bitrate [kbit/s]', '% udp lost', '% udp reordered', 'avg. delay [ms]', 'std. dev. delay [ms]', '% tcp lost'],
