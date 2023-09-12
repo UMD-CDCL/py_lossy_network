@@ -3,24 +3,29 @@ import os
 import sys
 from datetime import datetime
 from dataclasses import dataclass
+import re
 
 import tabulate
 import h5py
 import numpy as np
+from pint import UnitRegistry
 
 from py_lossy_network import utils
 
 @dataclass
 class NetworkConfig:
     # ingress parameters
-    ingress_bw: str = None
+    avg_ingress_bw: str = None
+    std_dev_ingress_bw: str = None
     ingress_burst: str = None
 
     # egress parameters
-    egress_bw: str = None
+    avg_egress_bw: str = None
+    std_dev_egress_bw: str = None
     egress_burst: str = None
     egress_latency: str = None
-    egress_loss: str = None
+    avg_egress_loss: str = None
+    std_dev_egress_loss: str = None
     egress_avg_delay: str = None
     egress_std_dev_delay: str = None
 
@@ -178,8 +183,8 @@ async def input_loop():
             # print(proc_tc_del.stdout.decode('utf-8'))
         elif split_user_input[0] == 'set_egress':
             # the expected number of arguments is between 4 and 9.
-            if len(split_user_input) != 13:
-                print("\"set_egress\" command expects 12 arguments. You provided {0} arguments".format(len(split_user_input) - 1))
+            if len(split_user_input) != 15:
+                print("\"set_egress\" command expects 14 arguments. You provided {0} arguments".format(len(split_user_input) - 1))
                 continue
 
             # get a list of the available network interfaces on this device
@@ -191,29 +196,35 @@ async def input_loop():
                 continue
 
             # extract the bandwidth, egress loss rate, and delay_ms passed in by the user
-            egress_bw = None
+            avg_egress_bw = None
+            std_dev_egress_bw = None
             egress_burst = None
             egress_latency = None
-            egress_loss = None
+            avg_egress_loss = None
+            std_dev_egress_loss = None
             egress_avg_delay = None
             egress_std_dev_delay = None
             for i in range(2, len(split_user_input)):
                 if split_user_input[i] == 'bw':
                     # if 'egress_bw' is not 'none', then 'egress_bw' has already been assigned and the user passed in egress_loss twice
-                    assert(egress_bw is None)
+                    assert(avg_egress_bw is None)
+                    assert(std_dev_egress_bw is None)
 
                     # make sure when we access split_user_input, there is enough space to accommodate i+1
-                    assert(i+1 < len(split_user_input))
+                    assert(i+2 < len(split_user_input))
 
-                    egress_bw = split_user_input[i+1]
+                    avg_egress_bw = split_user_input[i+1]
+                    std_dev_egress_bw = split_user_input[i+2]
                 elif split_user_input[i] == 'loss':
                     # if 'egress_loss' is not 'none', then 'egress_loss' has already been assigned and the user passed in egress_bw twice
-                    assert(egress_loss is None)
+                    assert(avg_egress_loss is None)
+                    assert(avg_egress_loss is None)
 
                     # make sure when we access split_user_input, there is enough space to accommodate i+1
-                    assert(i+1 < len(split_user_input))
+                    assert(i+2 < len(split_user_input))
 
-                    egress_loss = split_user_input[i+1]
+                    avg_egress_loss = split_user_input[i+1]
+                    std_dev_egress_loss = split_user_input[i+2]
                 elif split_user_input[i] == 'burst':
                     # if 'egress_burst' is not 'none', then 'egress_burst' has already been assigned and the user passed in egress_burst twice
                     assert(egress_burst is None)
@@ -243,21 +254,23 @@ async def input_loop():
                 config = network_interfaces[split_user_input[1]]
             else:
                 config = NetworkConfig()
-            config.egress_bw = egress_bw
+            config.avg_egress_bw = avg_egress_bw
+            config.std_dev_egress_bw = std_dev_egress_bw
             config.egress_burst = egress_burst
             config.egress_latency = egress_latency
-            config.egress_loss = egress_loss
+            config.avg_egress_loss = avg_egress_loss
+            config.std_dev_egress_loss = std_dev_egress_loss
             config.egress_avg_delay = egress_avg_delay
             config.egress_std_dev_delay = egress_std_dev_delay
             network_interfaces[split_user_input[1]] = config
 
             # add the rules
-            utils.add_tbf_filter(split_user_input[1], 'root', '1:0', egress_bw, egress_burst, egress_latency)
-            utils.add_netem_filter(split_user_input[1], 'parent 1:1', '10:0', egress_loss, egress_avg_delay, egress_std_dev_delay)
+            # utils.add_tbf_filter(split_user_input[1], 'root', '1:0', egress_bw, egress_burst, egress_latency)
+            # utils.add_netem_filter(split_user_input[1], 'parent 1:1', '10:0', egress_loss, egress_avg_delay, egress_std_dev_delay)
         elif split_user_input[0] == 'set_ingress':
             # the expected number of arguments is between 4 and 9.
-            if len(split_user_input) != 6:
-                print("\"set_ingress\" command expects 5 arguments. You provided {0} arguments".format(len(split_user_input) - 1))
+            if len(split_user_input) != 7:
+                print("\"set_ingress\" command expects 6 arguments. You provided {0} arguments".format(len(split_user_input) - 1))
                 continue
 
             # get a list of the available network interfaces on this device
@@ -269,17 +282,19 @@ async def input_loop():
                 continue
 
             # extract the bandwidth, egress loss rate, and delay_ms passed in by the user
-            ingress_bw = None
+            avg_ingress_bw = None
+            std_dev_ingress_bw = None
             ingress_burst = None
             for i in range(2, len(split_user_input)):
                 if split_user_input[i] == 'bw':
                     # if 'egress_bw' is not 'none', then 'egress_bw' has already been assigned and the user passed in egress_loss twice
-                    assert(ingress_bw is None)
+                    assert(avg_ingress_bw is None and std_dev_ingress_bw is None)
 
                     # make sure when we access split_user_input, there is enough space to accommodate i+1
-                    assert(i+1 < len(split_user_input))
+                    assert(i+2 < len(split_user_input))
 
-                    ingress_bw = split_user_input[i+1]
+                    avg_ingress_bw = split_user_input[i+1]
+                    std_dev_ingress_bw = split_user_input[i+2]
                 elif split_user_input[i] == 'burst':
                     # if 'egress_burst' is not 'none', then 'egress_burst' has already been assigned and the user passed in egress_burst twice
                     assert(ingress_burst is None)
@@ -293,12 +308,13 @@ async def input_loop():
                 config = network_interfaces[split_user_input[1]]
             else:
                 config = NetworkConfig()
-            config.ingress_bw = ingress_bw
+            config.avg_ingress_bw = avg_ingress_bw
+            config.std_dev_ingress_bw = std_dev_ingress_bw
             config.ingress_burst = ingress_burst
             network_interfaces[split_user_input[1]] = config
 
             # add the rules
-            utils.add_egress_rule(split_user_input[1], ingress_bw, ingress_burst)
+            # utils.add_egress_rule(split_user_input[1], ingress_bw, ingress_burst)
         elif split_user_input[0] == 'sender':
             # the expected number of arguments is 2, so if it is not exactly 2, then prompt the user again
             if len(split_user_input) != 2:
@@ -312,7 +328,7 @@ async def input_loop():
             print("Success!")
         elif split_user_input[0] == 'receiver':
             # start iperf3 as the server (takes roughly 25 seconds)
-            proc = utils.iperf3_server()
+            proc = await utils.iperf3_server()
 
             # TODO: fix problem where timeout doesn't trigger retcode 0 causing us to skip this conditional
             if proc.returncode != 0:
@@ -323,7 +339,7 @@ async def input_loop():
             client_ip, bitrate_kbps, percent_lost_udp, percent_reordered_udp = utils.process_iperf3(proc.stdout.decode('utf-8'))
 
             # compute the delay (RTT egress_latency) & packet egress_loss (over TCP) by using `ping`; takes roughly 30 seconds
-            proc = utils.ping(client_ip, count=20, timeout_seconds=120)
+            proc = await utils.ping(client_ip, count=20)
 
             # if `ping` crashed, then just continue (don't compute statistics)
             if proc.returncode != 0:
@@ -341,6 +357,7 @@ async def input_loop():
             utils.save(delay_dset, delay_ms)  # save the round-trip delay in milliseconds
             utils.save(percent_lost_tcp_dset, percent_lost_tcp)  # save the percent TCP packets lost
 
+            print(bitrate_kbps)
             # tables
             table = [
                 ['client ip', 'avg. bitrate [kbit/s]', 'std. dev. bitrate [kbit/s]', '% udp lost', '% udp reordered', 'avg. delay [ms]', 'std. dev. delay [ms]', '% tcp lost'],
@@ -353,11 +370,62 @@ async def input_loop():
 async def filtering_loop():
     global quit
     global network_interfaces
+    ureg = UnitRegistry()
+
+    regex = re.compile('\d+[a-zA-Z]bit')
+
 
     while not quit:
         keys = list(network_interfaces.keys())
-        # for k in keys:
-        #     print(network_interfaces[k])
+        for k in keys:
+            # print("{0}: ({1}, {2}, {3})".format(k, network_interfaces[k].avg_ingress_bw, network_interfaces[k].std_dev_ingress_bw, network_interfaces[k].ingress_burst))
+
+            if network_interfaces[k].avg_ingress_bw is not None and network_interfaces[k].std_dev_ingress_bw is not None:
+                avg_ingress_bw = network_interfaces[k].avg_ingress_bw
+                std_dev_ingress_bw = network_interfaces[k].std_dev_ingress_bw
+                if avg_ingress_bw[-4] == 'm':
+                    avg_ingress_bw = avg_ingress_bw[:-4] + 'M' + avg_ingress_bw[-3:]
+                if std_dev_ingress_bw[-4] == 'm':
+                    std_dev_ingress_bw = std_dev_ingress_bw[:-4] + 'M' + std_dev_ingress_bw[-3:]
+                avg_ingress_bw = ureg(avg_ingress_bw + '/sec').to(ureg.kbit / ureg.s)
+                std_dev_ingress_bw = ureg(std_dev_ingress_bw + '/sec').to(ureg.kbit / ureg.s)
+                instantaneous_ingress_bw = np.random.normal(avg_ingress_bw.m, std_dev_ingress_bw.m)
+                instantaneous_ingress_bw_str = "{0}kbit".format(int(round(instantaneous_ingress_bw, 0)))
+                utils.del_tc_rules(k, 'ingress')
+                utils.add_egress_rule(k, instantaneous_ingress_bw_str, network_interfaces[k].ingress_burst)
+
+            if network_interfaces[k].avg_egress_bw is not None and network_interfaces[k].std_dev_egress_bw is not None and \
+                network_interfaces[k].egress_burst is not None and network_interfaces[k].egress_latency is not None and \
+                    network_interfaces[k].avg_egress_loss is not None and network_interfaces[k].std_dev_egress_loss is not None and \
+                    network_interfaces[k].egress_avg_delay is not None and network_interfaces[k].egress_std_dev_delay is not None:
+
+                avg_egress_bw = network_interfaces[k].avg_egress_bw
+                std_dev_egress_bw = network_interfaces[k].std_dev_egress_bw
+                avg_egress_loss = network_interfaces[k].avg_egress_loss
+                std_dev_egress_loss = network_interfaces[k].std_dev_egress_loss
+
+                if avg_egress_bw[-4] == 'm':
+                    avg_egress_bw = avg_egress_bw[:-4] + 'M' + avg_egress_bw[-3:]
+                if std_dev_egress_bw[-4] == 'm':
+                    std_dev_egress_bw = std_dev_egress_bw[:-4] + 'M' + std_dev_egress_bw[-3:]
+
+                avg_egress_bw = ureg(avg_egress_bw + '/sec').to(ureg.kbit / ureg.s)
+                std_dev_egress_bw = ureg(std_dev_egress_bw + '/sec').to(ureg.kbit / ureg.s)
+                avg_egress_loss = ureg(avg_egress_loss)
+                std_dev_egress_loss = ureg(std_dev_egress_loss)
+
+                instantaneous_egress_bw = np.random.normal(avg_egress_bw.m, std_dev_egress_bw.m)
+                instantaneous_egress_loss = min(max(np.random.normal(avg_egress_loss.m, std_dev_egress_loss.m), 0.0), 100.0)
+
+                instantaneous_egress_bw_str = "{0}kbit".format(int(round(instantaneous_egress_bw, 0)))
+                instantaneous_egress_loss_str = "{0}%".format(int(round(instantaneous_egress_loss, 0)))
+                print(instantaneous_egress_bw_str)
+                print(instantaneous_egress_loss_str)
+
+                utils.del_tc_rules(k, 'root')
+                utils.add_tbf_filter(k, 'root', '1:0', instantaneous_egress_bw_str, network_interfaces[k].egress_burst, network_interfaces[k].egress_latency)
+                utils.add_netem_filter(k, 'parent 1:1', '10:0', instantaneous_egress_loss_str, network_interfaces[k].egress_avg_delay, network_interfaces[k].egress_std_dev_delay)
+
         await asyncio.sleep(1)
 
 

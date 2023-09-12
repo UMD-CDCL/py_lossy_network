@@ -2,6 +2,7 @@ import subprocess
 import re
 import numpy as np
 from pint import UnitRegistry
+import asyncio
 
 
 def prompt():
@@ -17,12 +18,12 @@ show <INTERFACE>:
 del <INTERFACE>: 
     Description: deletes all `tc` filter rules on network interface <INTERFACE>
     Example: del eth0
-set_egress <INTERFACE> bw <BANDWIDTH> burst <BURST> latency <LATENCY> loss <LOSS> delay <MEAN_DELAY> <STD_DEV_DELAY>
+set_egress <INTERFACE> bw <MEAN_BANDWIDTH> <STD_DEV_BANDWIDTH> burst <BURST> latency <LATENCY> loss <MEAN_LOSS> <STD_DEV_LOSS> delay <MEAN_DELAY> <STD_DEV_DELAY>
     Description: sets the egress bandwidth limit, burst limit, and latency limit 
-    Example: set_egress docker0 bw 500kbit burst 32kbit latency 500ms loss 5% delay 250ms 10ms
-    Example: set_egress docker0 bw 25mbit burst 64kbit latency 5s loss 0% delay 0ms 0ms
-    Example: set_egress docker0 bw 500kbit burst 1mbit latency 250ms loss 0.5% delay 10ms 50ms
-set_ingress <INTERFACE> bw <BANDWIDTH> burst <BURST>
+    Example: set_egress docker0 bw 500kbit 25kbit burst 32kbit latency 500ms loss 5% 0% delay 250ms 10ms
+    Example: set_egress docker0 bw 25mbit 0kbit burst 64kbit latency 5s loss 0% 0% delay 0ms 0ms
+    Example: set_egress docker0 bw 500kbit 25kbit burst 1mbit latency 250ms loss 0.5% 5% delay 10ms 50ms
+set_ingress <INTERFACE> bw <MEAN_BANDWIDTH> <STD_DEV_BANDWIDTH> burst <BURST>
     Description: sets the egress bandwidth limit and burst limit 
     Example: set_ingress docker0 bw 500kbit burst 32kbit 
     Example: set_ingress docker0 bw 25mbit burst 64kbit 
@@ -113,7 +114,7 @@ def add_egress_rule(network_interface: str, bw: str, burst: str) -> subprocess.C
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret
 
-def ping(ip_addr: str, count: int = 10, timeout_seconds: int = 20) -> subprocess.CompletedProcess:
+async def ping(ip_addr: str, count: int = 10) -> subprocess.CompletedProcess:
     """
 
     :param ip_addr:
@@ -122,19 +123,25 @@ def ping(ip_addr: str, count: int = 10, timeout_seconds: int = 20) -> subprocess
     :return:
     """
     try:
-        ret = subprocess.run(['ping', '-c', str(count), ip_addr], capture_output=True, timeout=timeout_seconds)
+        bash_command = 'ping -c {0} {1}'.format(count, ip_addr)
+        proc = await asyncio.create_subprocess_shell(bash_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await proc.communicate()
+        ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret
 
 
-def iperf3_server(timeout_seconds: int = 120) -> subprocess.CompletedProcess:
+async def iperf3_server() -> subprocess.CompletedProcess:
     """
 
     :return:
     """
     try:
-        ret = subprocess.run(['iperf3', '-s', '-1'], capture_output=True, timeout=timeout_seconds)
+        bash_command = 'iperf3 -s -1'
+        proc = await asyncio.create_subprocess_shell(bash_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await proc.communicate()
+        ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
         ret = subprocess.CompletedProcess(args="", returncode=1)
     return ret
