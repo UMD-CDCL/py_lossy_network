@@ -419,8 +419,8 @@ async def filtering_loop():
 
                 instantaneous_egress_bw_str = "{0}kbit".format(int(round(instantaneous_egress_bw, 0)))
                 instantaneous_egress_loss_str = "{0}%".format(int(round(instantaneous_egress_loss, 0)))
-                print(instantaneous_egress_bw_str)
-                print(instantaneous_egress_loss_str)
+                # print(instantaneous_egress_bw_str)
+                # print(instantaneous_egress_loss_str)
 
                 utils.del_tc_rules(k, 'root')
                 utils.add_tbf_filter(k, 'root', '1:0', instantaneous_egress_bw_str, network_interfaces[k].egress_burst, network_interfaces[k].egress_latency)
