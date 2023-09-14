@@ -37,6 +37,13 @@ Clone the most recent commit from the `main` branch to get the latest stable rel
 git clone git@github.com:UMD-CDCL/py_lossy_network.git
 ```
 
+#### Install the `python` Dependencies
+Install `pip`. Then run
+```bash
+cd py_lossy_network
+pip3 install -r requirements.txt  # if pip maps to python3, then run "pip install -r requirements.txt"
+```
+
 ### Running the Code
 To run the main program, just run:
 ```bash
