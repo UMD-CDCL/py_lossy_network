@@ -59,27 +59,27 @@ help:
     Description: shows list of commands
 show <INTERFACE>: 
     Description: shows all `tc` filter rules on network interface <INTERFACE>
-    Example: "show eth0"
+    Example: show eth0
 del <INTERFACE>: 
     Description: deletes all `tc` filter rules on network interface <INTERFACE>
     Example: del eth0
 set_egress <INTERFACE> bw <MEAN_BANDWIDTH> <STD_DEV_BANDWIDTH> burst <BURST> latency <LATENCY> loss <MEAN_LOSS> <STD_DEV_LOSS> delay <MEAN_DELAY> <STD_DEV_DELAY>
-    Description: sets the egress bandwidth limit, burst limit, and latency limit 
+    Description: sets the egress bandwidth limit, burst limit, maximum latency, loss rate, and delay 
     Example: set_egress docker0 bw 500kbit 25kbit burst 32kbit latency 500ms loss 5% 0% delay 250ms 10ms
     Example: set_egress docker0 bw 25mbit 0kbit burst 64kbit latency 5s loss 0% 0% delay 0ms 0ms
     Example: set_egress docker0 bw 500kbit 25kbit burst 1mbit latency 250ms loss 0.5% 5% delay 10ms 50ms
 set_ingress <INTERFACE> bw <MEAN_BANDWIDTH> <STD_DEV_BANDWIDTH> burst <BURST>
-    Description: sets the egress bandwidth limit and burst limit 
-    Example: set_ingress docker0 bw 500kbit burst 32kbit 
-    Example: set_ingress docker0 bw 25mbit burst 64kbit 
-    Example: set_ingress docker0 bw 500kbit burst 1mbit 
+    Description: sets the ingress bandwidth limit and burst limit 
+    Example: set_ingress docker0 bw 500kbit 10kbit burst 32kbit 
+    Example: set_ingress docker0 bw 25mbit 0mbit burst 64kbit 
+    Example: set_ingress docker0 bw 500kbit 1mbit burst 1mbit 
 "sender <SERVER_IP>": 
     Description: initiates data collection with the host system as the sender of data
     Example: sender 172.17.0.2
 "receiver":
     Description: initiates data collection with the host system as the receiver of data
     Example: receiver
-        
+
 > 
 ```
 

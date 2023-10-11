@@ -1,3 +1,4 @@
+# standard library includes
 import asyncio
 import os
 import sys
@@ -5,11 +6,13 @@ from datetime import datetime
 from dataclasses import dataclass
 import re
 
+# external library includes
 import tabulate
 import h5py
 import numpy as np
 from pint import UnitRegistry
 
+# internal includes
 from py_lossy_network import utils
 
 @dataclass
