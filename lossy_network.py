@@ -392,9 +392,11 @@ async def filtering_loop():
                 avg_ingress_bw = ureg(avg_ingress_bw + '/sec').to(ureg.kbit / ureg.s)
                 std_dev_ingress_bw = ureg(std_dev_ingress_bw + '/sec').to(ureg.kbit / ureg.s)
                 instantaneous_ingress_bw = np.random.normal(avg_ingress_bw.m, std_dev_ingress_bw.m)
+                if instantaneous_ingress_bw < 0:
+                    continue
                 instantaneous_ingress_bw_str = "{0}kbit".format(int(round(instantaneous_ingress_bw, 0)))
                 utils.del_tc_rules(k, 'ingress')
-                utils.add_egress_rule(k, instantaneous_ingress_bw_str, network_interfaces[k].ingress_burst)
+                utils.add_ingress_rule(k, instantaneous_ingress_bw_str, network_interfaces[k].ingress_burst)
 
             if network_interfaces[k].avg_egress_bw is not None and network_interfaces[k].std_dev_egress_bw is not None and \
                 network_interfaces[k].egress_burst is not None and network_interfaces[k].egress_latency is not None and \
