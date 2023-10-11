@@ -105,7 +105,7 @@ def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str
     return ret
 
 
-def add_egress_rule(network_interface: str, bw: str, burst: str) -> subprocess.CompletedProcess:
+def add_ingress_rule(network_interface: str, bw: str, burst: str) -> subprocess.CompletedProcess:
     bash_command = "sudo tc qdisc add dev {0} handle ffff: ingress && " \
                    "sudo tc filter add dev {0} parent ffff: u32 match u32 0 0 police rate {1} burst {2}".format(network_interface, bw, burst)
     try:
@@ -209,6 +209,7 @@ def process_iperf3(iperf3_output: str):
 
     # get number of lost datagrams and  total number of datagrams
     datagrams_regex = re.compile('\d+\/\d+')
+    # print(iperf3_output)
     datagrams = datagrams_regex.findall(iperf3_output)[-1].split('/')
     lost_datagrams = int(datagrams[0])
     total_datagrams = int(datagrams[1])
