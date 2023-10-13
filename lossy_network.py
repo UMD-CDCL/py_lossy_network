@@ -8,7 +8,6 @@ import re
 
 # external library includes
 import tabulate
-import h5py
 import numpy as np
 from pint import UnitRegistry
 
@@ -324,8 +323,6 @@ async def input_loop():
                 print("\"sender\" command expects 1 argument, the ip of the receiver. You provided {0} arguments".format(len(split_user_input) - 1))
                 continue
             proc = await utils.iperf3_client(split_user_input[1])
-
-            # TODO: fix this conditional to catch no iperf3 -s response... check something like the stderr
             if proc.returncode != 0:
                 print(proc.stderr.decode('utf-8'))
                 continue
@@ -336,7 +333,6 @@ async def input_loop():
             proc = await utils.iperf3_server()
             # print(proc.stdout.decode('utf-8'))
 
-            # TODO: fix problem where timeout doesn't trigger retcode 0 causing us to skip this conditional
             if proc.returncode != 0:
                 print(proc.stderr.decode('utf-8'))
                 continue
@@ -379,7 +375,6 @@ async def filtering_loop():
     ureg = UnitRegistry()
 
     regex = re.compile('\d+[a-zA-Z]bit')
-
 
     while not quit:
         keys = list(network_interfaces.keys())
