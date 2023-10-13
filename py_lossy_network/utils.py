@@ -158,7 +158,7 @@ async def iperf3_client(receiver_ip_addr: str) -> subprocess.CompletedProcess:
     :return:
     """
     try:
-        bash_command = 'iperf3 -c {0} -u -b 100M'.format(receiver_ip_addr)
+        bash_command = 'iperf3 -c {0} -u -b 95M'.format(receiver_ip_addr)
         proc = await asyncio.create_subprocess_shell(bash_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
@@ -200,7 +200,7 @@ def process_iperf3(iperf3_output: str):
     client_ip = client_ip_regex.findall(iperf3_output)[0].split(' ')[-1]  # some processing of the matched string
 
     # Use regex to ascertain all datarate measurements
-    bitrates_regex = re.compile('\d+.\d+ [a-zA-Z]bits\/sec')
+    bitrates_regex = re.compile('\d+.\d+ [a-zA-Z]*bits\/sec')
     bitrates = bitrates_regex.findall(iperf3_output)[:-1]  # vector of strings containing datarate with unit
 
     # transform the vector of strings into numpy vector with assumed units of kilobits per second
@@ -228,8 +228,16 @@ def process_iperf3(iperf3_output: str):
     else:
         reordered_datagrams = 0
 
-    return client_ip, bitrate_kbps, float(lost_datagrams / total_datagrams), float(
-        reordered_datagrams / total_datagrams)
+    lost_datagram_ratio = 0.0
+    reordered_datagram_ratio = 0.0
+    if total_datagrams == 0:
+        lost_datagram_ratio = float('nan')
+        reordered_datagram_ratio = float('nan')
+    else:
+        lost_datagram_ratio = float(lost_datagrams / total_datagrams)
+        reordered_datagram_ratio = float(reordered_datagrams / total_datagrams)
+
+    return client_ip, bitrate_kbps, lost_datagram_ratio, reordered_datagram_ratio
 
 
 def process_ping(ping_output: str):

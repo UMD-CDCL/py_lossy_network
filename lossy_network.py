@@ -334,6 +334,7 @@ async def input_loop():
         elif split_user_input[0] == 'receiver':
             # start iperf3 as the server (takes roughly 25 seconds)
             proc = await utils.iperf3_server()
+            # print(proc.stdout.decode('utf-8'))
 
             # TODO: fix problem where timeout doesn't trigger retcode 0 causing us to skip this conditional
             if proc.returncode != 0:
