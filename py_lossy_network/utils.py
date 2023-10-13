@@ -45,86 +45,99 @@ def show_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
     """
     displays the filter rules applied by `tc` on a particular network interface
     :param network_interface: the network interface we would like to display filter rules for represented as a str
-    :return: the output of the call to `tc`
+    :return:  a CompletedProcess object specifying success / failure of process
     """
     try:
         ret = subprocess.run(['tc', 'qdisc', 'show', 'dev', network_interface], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
     return ret
 
 
 def del_tc_rules(network_interface: str, qdisc: str) -> subprocess.CompletedProcess:
     """
-    deletes tc queuing discipline rules on a particular network interface
+    deletes `tc` queuing discipline rules on a particular network interface
     :param network_interface: the network interface which the queuing discipline applies to
     :param qdisc: the queuing discipline being deleted
-    :return: the output of the call to `tc`
+    :return:  a CompletedProcess object specifying success / failure of process
     """
     bash_command = "sudo tc qdisc del dev {0} {1}".format(network_interface, qdisc)
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
     return ret
 
 
 def add_tbf_filter(network_interface: str, parent: str, handle: str, rate: str, burst: str,
                    latency: str) -> subprocess.CompletedProcess:
     """
-
-    :param network_interface:
-    :param parent:
-    :param handle:
-    :param rate:
-    :param burst:
-    :param latency:
-    :return:
+    adds a `tbf` filter to a particular networking interface; that is, it introduces a maximum bound on egress bandwidth
+    burst rate, and latency. That is, if a given network interface exceeds the stated maximum bandwidth limit, burst
+    limit, or latency limit, then the rule will drop the corresponding datagrams or packets
+    :param network_interface: the network interface to which we would like to apply the rule
+    :param parent: the name of the parent node to this rule (see `tc` man pages for more information)
+    :param handle: the name of the *this* rule (see `tc` man pages for more information)
+    :param rate: the egress bandwidth limit
+    :param burst: the egress bandwidth limit
+    :param latency: the egress latency limit
+    :return: a CompletedProcess object specifying success / failure of process
     """
     bash_command = "sudo tc qdisc add dev {0} {1} handle {2} tbf rate {3} burst {4} latency {5}".format(network_interface, parent, handle, rate, burst, latency)
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
     return ret
 
 
 def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str, avg_delay: str,
                      std_dev_delay: str) -> subprocess.CompletedProcess:
     """
-
-    :param network_interface:
-    :param parent:
-    :param handle:
-    :param loss:
-    :param avg_delay:
-    :param std_dev_delay:
-    :return:
+    adss a `netem` filter to a particular networking interface; that is, it introduces a constant loss rate, and an
+    average and standard deviation delay to all egress traffic. In particular, all packets or datagrams eminating from
+    this interface will get dropped at a constant rate (say 10%) and all traffic will get delayed according to a normal
+    distribution parameterized by the stipulated mean and standard deviation
+    :param network_interface: the network interface to which we would like to apply the rule
+    :param parent: the name of the parent node to this rule (see `tc` man pages for more information)
+    :param handle: the name of the *this* rule (see `tc` man pages for more information)
+    :param loss: the egress loss rate
+    :param avg_delay: the egress average delay
+    :param std_dev_delay: the egress standard deviation delay
+    :return:  a CompletedProcess object specifying success / failure of process
     """
     bash_command = "sudo tc qdisc add dev {0} {1} handle {2} netem loss {3} delay {4} {5} distribution normal ".format(network_interface, parent, handle, loss, avg_delay, std_dev_delay)
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
     return ret
 
 
 def add_ingress_rule(network_interface: str, bw: str, burst: str) -> subprocess.CompletedProcess:
+    """
+    adds a couple of `tc` rules to limit the ingress bandwidth and burst rates
+    :param network_interface: the network interface to which we would like to apply the rule
+    :param bw: the ingress bandwidth limit
+    :param burst: the ingress burst rate limit
+    :return:  a CompletedProcess object specifying success / failure of process
+    """
     bash_command = "sudo tc qdisc add dev {0} handle ffff: ingress && " \
                    "sudo tc filter add dev {0} parent ffff: u32 match u32 0 0 police rate {1} burst {2}".format(network_interface, bw, burst)
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
     return ret
+
 
 async def ping(ip_addr: str, count: int = 10) -> subprocess.CompletedProcess:
     """
-
-    :param ip_addr:
-    :param count:
-    :param timeout_seconds:
-    :return:
+    this function performs a `ping` test targeted at the stipulated IP address for the purpose of measuring the delay
+    and tcp packet loss over the given network interface
+    :param ip_addr: the ip address of the target machine
+    :param count: the number of times we will ping the target machine
+    :return: a CompletedProcess object specifying success / failure of process
     """
     try:
         bash_command = 'ping -c {0} {1}'.format(count, ip_addr)
@@ -132,14 +145,15 @@ async def ping(ip_addr: str, count: int = 10) -> subprocess.CompletedProcess:
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
     return ret
 
 
 async def iperf3_server() -> subprocess.CompletedProcess:
     """
-
-    :return:
+    this function creates an iperf3 server process for the purpose of measuring the UDP bandwidth, UDP datagram loss
+    rate, and UDP datagram reordering rate
+    :return:  a CompletedProcess object specifying success / failure of process
     """
     try:
         bash_command = 'iperf3 -s -1'
@@ -147,40 +161,41 @@ async def iperf3_server() -> subprocess.CompletedProcess:
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
     return ret
 
 
 async def iperf3_client(receiver_ip_addr: str) -> subprocess.CompletedProcess:
     """
-
-    :param receiver_ip_addr:
-    :return:
+    this function creates an iperf3 client process targeted at the given ip address for the purpose of measuring the UDP
+    bandwidth, UDP datagram loss rate, and the UDP datagram reordering rate
+    :param receiver_ip_addr: the ip address of the iperf3 server
+    :return: a CompletedProcess object specifying success / failure of process
     """
     try:
-        bash_command = 'iperf3 -c {0} -u -b 100M'.format(receiver_ip_addr)
+        bash_command = 'iperf3 -c {0} -u -b 95M'.format(receiver_ip_addr)
         proc = await asyncio.create_subprocess_shell(bash_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1)
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
     return ret
 
 
 def list_available_interfaces() -> list:
     """
-
+    gets a list of strings denoting the network interfaces of this machine
     :return:
     """
     try:
         proc_ifconfig = subprocess.run(['ifconfig', '-a'], check=True, capture_output=True)
     except:
-        return subprocess.CompletedProcess(args="", returncode=1)
+        return []
 
     try:
         network_interface_list = subprocess.run(['sed', 's/[ \t].*//;/^$/d'], input=proc_ifconfig.stdout,capture_output=True).stdout.decode('utf-8').split(':\n')
     except:
-        return subprocess.CompletedProcess(args="", returncode=1)
+        return []
     return [interface for interface in network_interface_list if interface != '']
 
 
@@ -200,12 +215,14 @@ def process_iperf3(iperf3_output: str):
     client_ip = client_ip_regex.findall(iperf3_output)[0].split(' ')[-1]  # some processing of the matched string
 
     # Use regex to ascertain all datarate measurements
-    bitrates_regex = re.compile('\d+.\d+ [a-zA-Z]bits\/sec')
+    bitrates_regex = re.compile('\d+.\d+ [a-zA-Z]*bits\/sec')
     bitrates = bitrates_regex.findall(iperf3_output)[:-1]  # vector of strings containing datarate with unit
 
     # transform the vector of strings into numpy vector with assumed units of kilobits per second
     bitrate_kbps = np.zeros((len(bitrates),))
     for i in range(0, len(bitrates)):
+        # iperf3 outputs kbits as Kbits (which isn't technically correct, it should be 'kbits'). so we check for that
+        # case before handing off to `pint` to transform the units.
         if bitrates[i][-9] == 'K':
             bitrates[i] = bitrates[i].lower()
         bitrates[i] = ureg(bitrates[i]).to(ureg.kbit / ureg.s)  # perform unit conversion
@@ -213,7 +230,6 @@ def process_iperf3(iperf3_output: str):
 
     # get number of lost datagrams and  total number of datagrams
     datagrams_regex = re.compile('\d+\/\d+')
-    # print(iperf3_output)
     datagrams = datagrams_regex.findall(iperf3_output)[-1].split('/')
     lost_datagrams = int(datagrams[0])
     total_datagrams = int(datagrams[1])
@@ -228,8 +244,21 @@ def process_iperf3(iperf3_output: str):
     else:
         reordered_datagrams = 0
 
-    return client_ip, bitrate_kbps, float(lost_datagrams / total_datagrams), float(
-        reordered_datagrams / total_datagrams)
+    # To get the ratio of lost datagrams and reordered datagrams, we need to divide by the total datagrams. However, if
+    # iperf3 fails for any reason (like client disconnects from the server in the middle of the test), then we won't
+    # see ANY datagrams on the server side. Therefore, it is necessary to check for the condition that we don't get
+    # any datagrams BEFORE we divide by total datagrams to avoid a division by zero error.
+    lost_datagram_ratio = 0.0
+    reordered_datagram_ratio = 0.0
+    if total_datagrams == 0:
+        # in this case we the ratio is NaN and we can infer that some iperf3 error occurred
+        lost_datagram_ratio = float('nan')
+        reordered_datagram_ratio = float('nan')
+    else:
+        lost_datagram_ratio = float(lost_datagrams / total_datagrams)
+        reordered_datagram_ratio = float(reordered_datagrams / total_datagrams)
+
+    return client_ip, bitrate_kbps, lost_datagram_ratio, reordered_datagram_ratio
 
 
 def process_ping(ping_output: str):
