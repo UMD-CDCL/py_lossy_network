@@ -8,6 +8,7 @@ import re
 
 # external library includes
 import tabulate
+import h5py
 import numpy as np
 from pint import UnitRegistry
 
