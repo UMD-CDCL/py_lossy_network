@@ -50,7 +50,7 @@ def show_tc_rules(network_interface: str) -> subprocess.CompletedProcess:
     try:
         ret = subprocess.run(['tc', 'qdisc', 'show', 'dev', network_interface], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr=b"failed", stdout=b"failed")
     return ret
 
 
@@ -65,7 +65,7 @@ def del_tc_rules(network_interface: str, qdisc: str) -> subprocess.CompletedProc
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr=b"failed", stdout=b"failed")
     return ret
 
 
@@ -87,7 +87,7 @@ def add_tbf_filter(network_interface: str, parent: str, handle: str, rate: str, 
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr=b"failed", stdout=b"failed")
     return ret
 
 
@@ -110,7 +110,7 @@ def add_netem_filter(network_interface: str, parent: str, handle: str, loss: str
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stderr="failed", stdout="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stderr=b"failed", stdout=b"failed")
     return ret
 
 
@@ -127,7 +127,7 @@ def add_ingress_rule(network_interface: str, bw: str, burst: str) -> subprocess.
     try:
         ret = subprocess.run(['bash', '-c', bash_command], capture_output=True)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout=b"failed", stderr=b"failed")
     return ret
 
 
@@ -145,7 +145,7 @@ async def ping(ip_addr: str, count: int = 10) -> subprocess.CompletedProcess:
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout=b"failed", stderr=b"failed")
     return ret
 
 
@@ -161,7 +161,7 @@ async def iperf3_server() -> subprocess.CompletedProcess:
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout=b"failed", stderr=b"failed")
     return ret
 
 
@@ -178,7 +178,7 @@ async def iperf3_client(receiver_ip_addr: str) -> subprocess.CompletedProcess:
         stdout, stderr = await proc.communicate()
         ret = subprocess.CompletedProcess(args="", returncode=0, stdout=stdout, stderr=stderr)
     except:
-        ret = subprocess.CompletedProcess(args="", returncode=1, stdout="failed", stderr="")
+        ret = subprocess.CompletedProcess(args="", returncode=1, stdout=b"failed", stderr=b"failed")
     return ret
 
 
